@@ -7,7 +7,7 @@ import qio.annotate.Inject;
 import qio.annotate.Property;
 import qio.annotate.Service;
 import qio.model.web.PageCache;
-import shape.GiganteBenefit;
+import shape.Benefit;
 import shape.model.*;
 import shape.repo.TipRepo;
 import shape.repo.StripeRepo;

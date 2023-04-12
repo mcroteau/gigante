@@ -3,7 +3,7 @@ package shape.service;
 import net.stargzr.model.NetworkRequest;
 import net.stargzr.model.NetworkResponse;
 import net.stargzr.security.SecurityManager;
-import shape.GiganteBenefit;
+import shape.Benefit;
 import shape.model.User;
 import shape.repo.UserRepo;
 import perched.Parakeet;

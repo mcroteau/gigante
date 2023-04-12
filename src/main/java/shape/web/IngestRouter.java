@@ -11,7 +11,7 @@ import net.plsar.annotations.network.Post;
 import net.plsar.model.NetworkRequest;
 import net.plsar.model.ViewCache;
 import net.plsar.security.SecurityManager;
-import shape.GiganteBenefit;
+import shape.Benefit;
 import shape.before.SessionBefore;
 import shape.model.Business;
 import shape.model.Place;
@@ -32,11 +32,11 @@ public class IngestRouter {
 
     public IngestRouter(){
         this.gson = new Gson();
-        this.giganteBenefit = new GiganteBenefit();
+        this.benefit = new Benefit();
     }
 
     Gson gson;
-    GiganteBenefit giganteBenefit;
+    Benefit benefit;
 
     @Bind
     TownRepo townRepo;
@@ -56,7 +56,7 @@ public class IngestRouter {
             cache.set("message", "Please signin to continue...");
             return "redirect:/signin";
         }
-        if(!security.hasRole(giganteBenefit.getSuperRole(), req)){
+        if(!security.hasRole(benefit.getSuperRole(), req)){
             cache.set("message", "Please signin to continue...");
             return "redirect:/home";
         }

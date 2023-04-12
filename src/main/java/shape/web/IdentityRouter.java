@@ -16,7 +16,7 @@ import net.plsar.model.NetworkRequest;
 import net.plsar.model.NetworkResponse;
 import net.plsar.model.ViewCache;
 import net.plsar.security.SecurityManager;
-import shape.GiganteBenefit;
+import shape.Benefit;
 import shape.before.SessionBefore;
 import shape.model.*;
 import shape.repo.BusinessRepo;
@@ -32,12 +32,12 @@ public class IdentityRouter {
 	public IdentityRouter(){
 		this.smsService = new SmsService();
 		this.seaService = new SeaService();
-		this.giganteBenefit = new GiganteBenefit();
+		this.benefit = new Benefit();
 	}
 
 	SmsService smsService;
 	SeaService seaService;
-	GiganteBenefit giganteBenefit;
+	Benefit benefit;
 
 	@Bind
 	UserRepo userRepo;
@@ -56,7 +56,7 @@ public class IdentityRouter {
 
 		try{
 
-			String email = giganteBenefit.getSpaces(req.getValue("email"));
+			String email = benefit.getSpaces(req.getValue("email"));
 			String password = req.getValue("password");
 			if(!security.signin(email, password, req, resp)){
 				cache.set("message", "Wrong phone and password");
@@ -116,7 +116,7 @@ public class IdentityRouter {
 						   ViewCache cache){
 		security.signout(req, resp);
 		SignMeUp signMeUp = req.get(SignMeUp.class);
-		String email = giganteBenefit.getSpaces(signMeUp.getEmail());
+		String email = benefit.getSpaces(signMeUp.getEmail());
 		User existingUser = userRepo.getEmail(email);
 		if(existingUser != null){
 			cache.set("message", "You might be already registered. We found an account associated with the email provided.");
@@ -125,14 +125,14 @@ public class IdentityRouter {
 
 		String password = signMeUp.getPassword();
 
-		if(!giganteBenefit.isValidMailbox(signMeUp.getEmail())){
+		if(!benefit.isValidMailbox(signMeUp.getEmail())){
 			cache.set("message", "Please enter a valid email!");
 			return "redirect:/signup";
 		}
 
 		User user = new User();
-		user.setUuid(giganteBenefit.getString(28).toUpperCase());
-		user.setGuid(giganteBenefit.getString(28).toUpperCase());
+		user.setUuid(benefit.getString(28).toUpperCase());
+		user.setGuid(benefit.getString(28).toUpperCase());
 		user.setEmail(email);
 		user.setPassword(security.hash(password));
 
@@ -150,9 +150,9 @@ public class IdentityRouter {
 		Integer id = userRepo.save(user);
 		user.setId(Long.parseLong(id.toString()));
 
-		userRepo.saveUserRole(user.getId(), giganteBenefit.getUserRole());
+		userRepo.saveUserRole(user.getId(), benefit.getUserRole());
 
-		String permission = giganteBenefit.getUserMaintenance() + user.getId();
+		String permission = benefit.getUserMaintenance() + user.getId();
 		userRepo.savePermission(user.getId(), permission);
 
 		UserBusiness userBusiness = new UserBusiness();
@@ -161,7 +161,7 @@ public class IdentityRouter {
 		userRepo.saveBusiness(userBusiness);
 
 		UserBusiness savedUserBusiness = userRepo.getSavedBusiness();
-		String businessPermission = giganteBenefit.getBusinessMaintenance() + savedUserBusiness.getId();
+		String businessPermission = benefit.getBusinessMaintenance() + savedUserBusiness.getId();
 		userRepo.savePermission(savedUserBusiness.getId(), businessPermission);
 
 		Business business = businessRepo.get(signMeUp.getBusinessId());

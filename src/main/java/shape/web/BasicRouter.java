@@ -7,7 +7,7 @@ import net.plsar.annotations.network.Post;
 import net.plsar.model.NetworkRequest;
 import net.plsar.model.ViewCache;
 import net.plsar.security.SecurityManager;
-import shape.GiganteBenefit;
+import shape.Benefit;
 import shape.before.SessionBefore;
 import shape.model.*;
 import shape.repo.BusinessRepo;
@@ -26,12 +26,12 @@ public class BasicRouter {
     public BasicRouter(){
         this.smsService = new SmsService();
         this.seaService = new SeaService();
-        this.giganteBenefit = new GiganteBenefit();
+        this.benefit = new Benefit();
     }
 
     SmsService smsService;
     SeaService seaService;
-    GiganteBenefit giganteBenefit;
+    Benefit benefit;
 
     @Bind
     TipRepo tipRepo;
@@ -153,7 +153,7 @@ public class BasicRouter {
             return "redirect:/signin";
         }
 
-        if(security.hasRole(giganteBenefit.getSuperRole(), req)){
+        if(security.hasRole(benefit.getSuperRole(), req)){
             List<User> users = userRepo.getList();
             cache.set("users", users);
 
@@ -268,7 +268,7 @@ public class BasicRouter {
             cache.set("message", "Whao! Where are you going.");
             return "redirect:/";
         }
-        if(!security.hasRole(giganteBenefit.getSuperRole(), req)){
+        if(!security.hasRole(benefit.getSuperRole(), req)){
             cache.set("message", "Whao! Where are you going.");
             return "redirect:/";
         }
@@ -344,8 +344,8 @@ public class BasicRouter {
         if(!security.isAuthenticated(req)){
             return "redirect:/";
         }
-        String permission = giganteBenefit.getBusinessMaintenance() + id;
-        if(!security.hasRole(giganteBenefit.getSuperRole(), req) &&
+        String permission = benefit.getBusinessMaintenance() + id;
+        if(!security.hasRole(benefit.getSuperRole(), req) &&
                 !security.hasPermission(permission, req)){
             return "redirect:/";
         }
@@ -364,8 +364,8 @@ public class BasicRouter {
         if(!security.isAuthenticated(req)){
             return "redirect:/";
         }
-        String permission = giganteBenefit.getBusinessMaintenance() + id;
-        if(!security.hasRole(giganteBenefit.getSuperRole(), req) &&
+        String permission = benefit.getBusinessMaintenance() + id;
+        if(!security.hasRole(benefit.getSuperRole(), req) &&
                 !security.hasPermission(permission, req)){
             return "redirect:/";
         }
@@ -386,8 +386,8 @@ public class BasicRouter {
         if(!security.isAuthenticated(req)){
             return "redirect:/";
         }
-        String permission = giganteBenefit.getBusinessMaintenance() + id;
-        if(!security.hasRole(giganteBenefit.getSuperRole(), req) &&
+        String permission = benefit.getBusinessMaintenance() + id;
+        if(!security.hasRole(benefit.getSuperRole(), req) &&
                 !security.hasPermission(permission, req)){
             return "redirect:/";
         }
@@ -406,8 +406,8 @@ public class BasicRouter {
             return "redirect:/";
         }
         UserBusiness userBusiness = req.get(UserBusiness.class);
-        String permission = giganteBenefit.getBusinessMaintenance() + userBusiness.getId();
-        if(!security.hasRole(giganteBenefit.getSuperRole(), req) &&
+        String permission = benefit.getBusinessMaintenance() + userBusiness.getId();
+        if(!security.hasRole(benefit.getSuperRole(), req) &&
                 !security.hasPermission(permission, req)){
             return "redirect:/";
         }

@@ -1,6 +1,6 @@
 package shape.service;
 
-import shape.GiganteBenefit;
+import shape.Benefit;
 import shape.model.*;
 import shape.repo.*;
 

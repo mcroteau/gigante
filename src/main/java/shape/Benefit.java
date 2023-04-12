@@ -27,7 +27,7 @@ import net.plsar.security.renderer.GuestRenderer;
 
 import org.apache.commons.validator.routines.EmailValidator;
 
-public class GiganteBenefit {
+public class Benefit {
 
 	public String getUserMaintenance(){
 		return "user:maintenance:";

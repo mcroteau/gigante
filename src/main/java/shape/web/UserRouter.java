@@ -9,7 +9,7 @@ import net.plsar.model.NetworkRequest;
 import net.plsar.model.ViewCache;
 import net.plsar.model.RequestComponent;
 import net.plsar.security.SecurityManager;
-import shape.GiganteBenefit;
+import shape.Benefit;
 import shape.before.SessionBefore;
 import shape.model.User;
 import shape.repo.UserRepo;
@@ -24,18 +24,18 @@ public class UserRouter {
 	public UserRouter(){
 		this.smsService = new SmsService();
 		this.seaService = new SeaService();
-		this.giganteBenefit = new GiganteBenefit();
+		this.benefit = new Benefit();
 	}
 
 	SmsService smsService;
 	SeaService seaService;
-	GiganteBenefit giganteBenefit;
+	Benefit benefit;
 
 	@Bind
 	UserRepo userRepo;
 
 	String getPermission(String id){
-		return giganteBenefit.getUserMaintenance() + id;
+		return benefit.getUserMaintenance() + id;
 	}
 
 	@Before({SessionBefore.class})
@@ -45,7 +45,7 @@ public class UserRouter {
 		if(!security.isAuthenticated(req)){
 			return "redirect:/";
 		}
-		if(!security.hasRole(giganteBenefit.getSuperRole(), req)){
+		if(!security.hasRole(benefit.getSuperRole(), req)){
 			cache.set("message", "You must be a super user in order to access users.");
 			return "redirect:/";
 		}
@@ -65,7 +65,7 @@ public class UserRouter {
 		if (!security.isAuthenticated(req)) {
 			return "redirect:/";
 		}
-		if (!security.hasRole(giganteBenefit.getSuperRole(), req)) {
+		if (!security.hasRole(benefit.getSuperRole(), req)) {
 			cache.set("message", "You must be a super user in order to access users.");
 			return "redirect:/";
 		}
@@ -82,13 +82,13 @@ public class UserRouter {
 		if(!security.isAuthenticated(req)){
 			return "redirect:/";
 		}
-		if(!security.hasRole(giganteBenefit.getSuperRole(), req)){
+		if(!security.hasRole(benefit.getSuperRole(), req)){
 			cache.set("message", "You must be a super user in order to access users.");
 			return "redirect:/";
 		}
 
 		User user = req.get(User.class);
-		String phone = giganteBenefit.getPhone(user.getPhone());
+		String phone = benefit.getPhone(user.getPhone());
 		User storedUser = userRepo.getPhone(phone);
 		if(storedUser != null){
 			cache.set("message", "Someone already exists with the same phone number. Please try a different number.");
@@ -114,7 +114,7 @@ public class UserRouter {
 							  ViewCache cache,
 							  @Component Long id){
 		String permission = getPermission(Long.toString(id));
-		if(!security.hasRole(giganteBenefit.getSuperRole(), req) &&
+		if(!security.hasRole(benefit.getSuperRole(), req) &&
 				!security.hasPermission(permission, req)){
 			return "redirect:/";
 		}
@@ -133,7 +133,7 @@ public class UserRouter {
 							 SecurityManager security,
 							 ViewCache cache,
 							 @Component Long id) {
-		if(!security.hasRole(giganteBenefit.getSuperRole(), req)){
+		if(!security.hasRole(benefit.getSuperRole(), req)){
 			cache.set("message", "You don't have permission");
 			return "redirect:/";
 		}
@@ -152,7 +152,7 @@ public class UserRouter {
 		}
 
 		String permission = getPermission(Long.toString(id));
-		if(!security.hasRole(giganteBenefit.getSuperRole(), req) &&
+		if(!security.hasRole(benefit.getSuperRole(), req) &&
 				!security.hasPermission(permission, req)){
 			return "redirect:/";
 		}
@@ -164,13 +164,13 @@ public class UserRouter {
 
 
 		for (FileComponent file : fileParts) {
-			String prefix = giganteBenefit.getEncodedPrefix(file.getFileName());
+			String prefix = benefit.getEncodedPrefix(file.getFileName());
 			String image = Base64.getEncoder().withoutPadding().encodeToString(file.getFileBytes());
 			user.setPhoto(prefix + image);
 		}
 
 		String description = req.getValue("description");
-		String phone = giganteBenefit.getPhone(req.getValue("phone"));
+		String phone = benefit.getPhone(req.getValue("phone"));
 		String name = req.getValue("name");
 
 		user.setDescription(description);
@@ -202,7 +202,7 @@ public class UserRouter {
 							SecurityManager security,
 							ViewCache cache){
 		try {
-			String phone = giganteBenefit.getPhone(req.getValue("phone"));
+			String phone = benefit.getPhone(req.getValue("phone"));
 			User user = userRepo.getPhone(phone);
 			if (user == null) {
 				cache.set("message", "We were unable to find user with given cell phone number.");
@@ -212,7 +212,7 @@ public class UserRouter {
 			RouteAttributes routeAttributes = req.getRouteAttributes();
 			String key = (String) routeAttributes.get("sms.key");
 
-			String guid = giganteBenefit.getString(6);
+			String guid = benefit.getString(6);
 			user.setPassword(security.hash(guid));
 			userRepo.update(user);
 

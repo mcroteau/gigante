@@ -4,7 +4,7 @@ import net.stargzr.annotations.Bind;
 import net.stargzr.annotations.Service;
 import net.stargzr.model.NetworkRequest;
 import net.stargzr.model.ViewCache;
-import shape.GiganteBenefit;
+import shape.Benefit;
 import shape.model.User;
 import shape.repo.UserRepo;
 import qio.Qio;

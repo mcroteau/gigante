@@ -19,10 +19,10 @@ import java.nio.file.Paths;
 public class Startup implements ServerListener {
 
     public Startup(){
-        this.giganteBenefit = new GiganteBenefit();
+        this.benefit = new Benefit();
     }
 
-    GiganteBenefit giganteBenefit;
+    Benefit benefit;
 
     @Override
     public void startup() {
@@ -39,46 +39,46 @@ public class Startup implements ServerListener {
         TownRepo townRepo = new TownRepo(dao);
         BusinessRepo businessRepo = new BusinessRepo(dao);
 
-        Role superRole = roleRepo.get(giganteBenefit.getSuperRole());
-        Role userRole = roleRepo.get(giganteBenefit.getUserRole());
+        Role superRole = roleRepo.get(benefit.getSuperRole());
+        Role userRole = roleRepo.get(benefit.getUserRole());
 
         if(superRole == null){
             superRole = new Role();
-            superRole.setName(giganteBenefit.getSuperRole());
+            superRole.setName(benefit.getSuperRole());
             roleRepo.save(superRole);
         }
 
         if(userRole == null){
             userRole = new Role();
-            userRole.setName(giganteBenefit.getUserRole());
+            userRole.setName(benefit.getUserRole());
             roleRepo.save(userRole);
         }
 
         Path path = Paths.get("src", "main", "webapp", "assets", "media", "une.png");
         String imageUri = path.toAbsolutePath().toString();
         StringBuilder image = new StringBuilder();
-        image.append(giganteBenefit.getEncodedPrefix(imageUri));
-        image.append(giganteBenefit.getEncoded(imageUri));
+        image.append(benefit.getEncodedPrefix(imageUri));
+        image.append(benefit.getEncoded(imageUri));
 
         User existing = userRepo.getPhone("9073477052");
-        String password = SecurityManager.dirty(giganteBenefit.getSuperPassword());
+        String password = SecurityManager.dirty(benefit.getSuperPassword());
 
-        superRole = roleRepo.get(giganteBenefit.getSuperRole());
+        superRole = roleRepo.get(benefit.getSuperRole());
 
         if(existing == null){
             User superUser = new User();
-            superUser.setGuid(giganteBenefit.getString(28).toUpperCase());
-            superUser.setUuid(giganteBenefit.getString(28).toUpperCase());
+            superUser.setGuid(benefit.getString(28).toUpperCase());
+            superUser.setUuid(benefit.getString(28).toUpperCase());
             superUser.setName("Super User!");
             superUser.setPhone("9073477052");
-            superUser.setEmail(giganteBenefit.getSuperEmail());
+            superUser.setEmail(benefit.getSuperEmail());
             superUser.setPassword(password);
             Integer id = userRepo.save(superUser);
             superUser.setId(Long.parseLong(id.toString()));
             superUser.setPhoto(image.toString());
             userRepo.update(superUser);
             userRepo.saveUserRole(id, superRole.getId());
-            String permission = giganteBenefit.getUserMaintenance() + id;
+            String permission = benefit.getUserMaintenance() + id;
             userRepo.savePermission(id, permission);
         }
 
@@ -135,8 +135,8 @@ public class Startup implements ServerListener {
             String name = names[z];
             User user = new User();
             user.setName(name);
-            user.setGuid(giganteBenefit.getString(28).toUpperCase());
-            user.setUuid(giganteBenefit.getString(28).toUpperCase());
+            user.setGuid(benefit.getString(28).toUpperCase());
+            user.setUuid(benefit.getString(28).toUpperCase());
             user.setEmail("croteau.mike+" + z + "@gmail.com");
             user.setPhone("9073477052");
             user.setPassword(SecurityManager.dirty("password"));
@@ -151,8 +151,8 @@ public class Startup implements ServerListener {
             userRepo.update(user);
 
 
-            userRepo.saveUserRole(user.getId(), giganteBenefit.getUserRole());
-            String permission = giganteBenefit.getUserMaintenance() + user.getId();
+            userRepo.saveUserRole(user.getId(), benefit.getUserRole());
+            String permission = benefit.getUserMaintenance() + user.getId();
             userRepo.savePermission(user.getId(), permission);
 
 
@@ -164,7 +164,7 @@ public class Startup implements ServerListener {
 
             UserBusiness savedUserBusiness = userRepo.getSavedBusiness();
 
-            String businessPermission = giganteBenefit.getBusinessMaintenance() + savedUserBusiness.getId();
+            String businessPermission = benefit.getBusinessMaintenance() + savedUserBusiness.getId();
             userRepo.savePermission(user.getId(), businessPermission);
 
         }

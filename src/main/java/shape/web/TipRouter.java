@@ -15,7 +15,7 @@ import net.plsar.annotations.network.Post;
 import net.plsar.model.NetworkRequest;
 import net.plsar.model.ViewCache;
 import net.plsar.security.SecurityManager;
-import shape.GiganteBenefit;
+import shape.Benefit;
 import shape.before.SessionBefore;
 import shape.model.*;
 import shape.repo.TipRepo;
@@ -35,12 +35,12 @@ public class TipRouter {
     public TipRouter(){
         this.smsService = new SmsService();
         this.seaService = new SeaService();
-        this.giganteBenefit = new GiganteBenefit();
+        this.benefit = new Benefit();
     }
 
     SmsService smsService;
     SeaService seaService;
-    GiganteBenefit giganteBenefit;
+    Benefit benefit;
 
     @Bind
     UserRepo userRepo;
@@ -84,12 +84,12 @@ public class TipRouter {
             return "redirect:/" + recipient.getGuid();
         }
 
-        tip.setEmail(giganteBenefit.getSpaces(tip.getEmail()));
-        if(!giganteBenefit.isValidMailbox(tip.getEmail())){
+        tip.setEmail(benefit.getSpaces(tip.getEmail()));
+        if(!benefit.isValidMailbox(tip.getEmail())){
             data.set("message", "Please enter a valid Email Address!");
             return "redirect:/" + recipient.getGuid();
         }
-        tip.setCreditCard(giganteBenefit.getSpaces(tip.getCreditCard()));
+        tip.setCreditCard(benefit.getSpaces(tip.getCreditCard()));
         if(tip.getCreditCard().equals("")){
             data.set("message", "Please enter a valid credit card!");
             return "redirect:/" + recipient.getGuid();
@@ -115,7 +115,7 @@ public class TipRouter {
 
             Stripe.apiKey = apiKey;
 
-            String guid = giganteBenefit.getTip(36).toLowerCase();
+            String guid = benefit.getTip(36).toLowerCase();
             tip.setGuid(guid);
 
             User patron = userRepo.get(tip.getEmail());
@@ -125,20 +125,20 @@ public class TipRouter {
                 patron.setEmail(tip.getEmail());
                 patron.setPassword(security.hash(guid));
                 patron.setClean(guid);
-                patron.setDateCreated(giganteBenefit.getDate());
+                patron.setDateCreated(benefit.getDate());
                 userRepo.save(patron);
                 patron = userRepo.getSaved();
                 patron.setClean(guid);
 
-                userRepo.saveUserRole(patron.getId(), giganteBenefit.getDonorRole());
+                userRepo.saveUserRole(patron.getId(), benefit.getDonorRole());
 
-                String permission = giganteBenefit.getUserMaintenance() + patron.getId();
+                String permission = benefit.getUserMaintenance() + patron.getId();
                 userRepo.savePermission(patron.getId(), permission);
             }
 
             tip.setPatronId(patron.getId());
             tip.setProcessed(false);
-            tip.setTipDate(giganteBenefit.getDate());//2.9% goes to another company
+            tip.setTipDate(benefit.getDate());//2.9% goes to another company
 
             BigDecimal appfee = tip.getAmount().multiply(new BigDecimal(0.07, new MathContext(2)));
             Long appfeecents = appfee.movePointRight(2).longValue();
@@ -294,7 +294,7 @@ public class TipRouter {
 
             if(recipient.getPhone() != null) {
                 try {
-                    String payload = "GiganteBenefit! ~ $" + tip.getAmount() + " tip! Here is the tipper's email, " + tip.getEmail();
+                    String payload = "Benefit! ~ $" + tip.getAmount() + " tip! Here is the tipper's email, " + tip.getEmail();
                     smsService.send(recipient.getPhone(), payload, key);
                 }catch(Exception ex){}
             }
