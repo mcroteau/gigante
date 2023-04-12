@@ -1,0 +1,172 @@
+package shape;
+
+import net.plsar.Dao;
+import net.plsar.PersistenceConfig;
+import net.plsar.annotations.ServerStartup;
+import net.plsar.drivers.Drivers;
+import net.plsar.implement.ServerListener;
+import net.plsar.security.SecurityManager;
+import shape.model.*;
+import shape.repo.BusinessRepo;
+import shape.repo.RoleRepo;
+import shape.repo.TownRepo;
+import shape.repo.UserRepo;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+@ServerStartup
+public class Startup implements ServerListener {
+
+    public Startup(){
+        this.giganteBenefit = new GiganteBenefit();
+    }
+
+    GiganteBenefit giganteBenefit;
+
+    @Override
+    public void startup() {
+
+        PersistenceConfig persistenceConfig = new PersistenceConfig();
+        persistenceConfig.setDriver(Drivers.H2);
+        persistenceConfig.setUrl("jdbc:h2:~/devDb");
+        persistenceConfig.setUser("sa");
+        persistenceConfig.setPassword("");
+
+        Dao dao = new Dao(persistenceConfig);
+        UserRepo userRepo = new UserRepo(dao);
+        RoleRepo roleRepo = new RoleRepo(dao);
+        TownRepo townRepo = new TownRepo(dao);
+        BusinessRepo businessRepo = new BusinessRepo(dao);
+
+        Role superRole = roleRepo.get(giganteBenefit.getSuperRole());
+        Role userRole = roleRepo.get(giganteBenefit.getUserRole());
+
+        if(superRole == null){
+            superRole = new Role();
+            superRole.setName(giganteBenefit.getSuperRole());
+            roleRepo.save(superRole);
+        }
+
+        if(userRole == null){
+            userRole = new Role();
+            userRole.setName(giganteBenefit.getUserRole());
+            roleRepo.save(userRole);
+        }
+
+        Path path = Paths.get("src", "main", "webapp", "assets", "media", "une.png");
+        String imageUri = path.toAbsolutePath().toString();
+        StringBuilder image = new StringBuilder();
+        image.append(giganteBenefit.getEncodedPrefix(imageUri));
+        image.append(giganteBenefit.getEncoded(imageUri));
+
+        User existing = userRepo.getPhone("9073477052");
+        String password = SecurityManager.dirty(giganteBenefit.getSuperPassword());
+
+        superRole = roleRepo.get(giganteBenefit.getSuperRole());
+
+        if(existing == null){
+            User superUser = new User();
+            superUser.setGuid(giganteBenefit.getString(28).toUpperCase());
+            superUser.setUuid(giganteBenefit.getString(28).toUpperCase());
+            superUser.setName("Super User!");
+            superUser.setPhone("9073477052");
+            superUser.setEmail(giganteBenefit.getSuperEmail());
+            superUser.setPassword(password);
+            Integer id = userRepo.save(superUser);
+            superUser.setId(Long.parseLong(id.toString()));
+            superUser.setPhoto(image.toString());
+            userRepo.update(superUser);
+            userRepo.saveUserRole(id, superRole.getId());
+            String permission = giganteBenefit.getUserMaintenance() + id;
+            userRepo.savePermission(id, permission);
+        }
+
+        genMocks(image, userRepo, townRepo, businessRepo);
+
+    }
+
+    public void genMocks(StringBuilder image, UserRepo userRepo, TownRepo townRepo, BusinessRepo businessRepo){
+
+        String[] towns = new String[]{"Antilles", "Burbin Banks Delaware", "Habiskus"};
+        for(String name: towns){
+            Town town = new Town();
+            town.setName(name);
+            townRepo.save(town);
+
+            Town savedTown = townRepo.getSaved();
+            savedTown.setLatitude("35.2226");
+            savedTown.setLongitude("97.4395");
+            townRepo.update(savedTown);
+        }
+
+        Business one = new Business();
+        one.setName("ae0n");
+        one.setAddress("ae0n Fairbanks Alaska");
+        one.setLatitude("45.452191");
+        one.setLongitude("-123.9128525");
+        one.setTownId(1L);
+        businessRepo.save(one);
+
+        Business dos = new Business();
+        dos.setName("Petco");
+        dos.setAddress("Petco 625 H. Street");
+        dos.setLatitude("38.891032");
+        dos.setLongitude("-77.168679");
+        dos.setTownId(2L);
+        businessRepo.save(dos);
+
+        Business tres = new Business();
+        tres.setName("Everything But Water");
+        tres.setAddress("Everything But Water 4724 1/4 Admiralty Way, Marina Del Rey, CA 90292");
+        tres.setLatitude("33.9544111");
+        tres.setLongitude("-118.4867234");
+        tres.setTownId(1L);
+        businessRepo.save(tres);
+
+        String[] names = new String[]{ "Mitch Rithmithgan",
+                "Cheech Nordom",
+                "Tito Chavez",
+                "Lisa Churnem",
+                "Manuel Smith",
+                "Allen Aspinwall"};
+
+        for(int z = 0; z < names.length; z++){
+            String name = names[z];
+            User user = new User();
+            user.setName(name);
+            user.setGuid(giganteBenefit.getString(28).toUpperCase());
+            user.setUuid(giganteBenefit.getString(28).toUpperCase());
+            user.setEmail("croteau.mike+" + z + "@gmail.com");
+            user.setPhone("9073477052");
+            user.setPassword(SecurityManager.dirty("password"));
+            user.setTownId(2L);
+            Integer id = userRepo.save(user);
+
+            user.setId(Long.parseLong(id.toString()));
+            user.setPhoto(image.toString());
+            user.setName(name);
+            user.setPhone("9073477052");
+            user.setStripeAccountId("acct_1MvxblIOA0jREvp0");
+            userRepo.update(user);
+
+
+            userRepo.saveUserRole(user.getId(), giganteBenefit.getUserRole());
+            String permission = giganteBenefit.getUserMaintenance() + user.getId();
+            userRepo.savePermission(user.getId(), permission);
+
+
+            UserBusiness userBusiness = new UserBusiness();
+            userBusiness.setUserId(user.getId());
+            userBusiness.setBusinessId(2L);
+
+            userRepo.saveBusiness(userBusiness);
+
+            UserBusiness savedUserBusiness = userRepo.getSavedBusiness();
+
+            String businessPermission = giganteBenefit.getBusinessMaintenance() + savedUserBusiness.getId();
+            userRepo.savePermission(user.getId(), businessPermission);
+
+        }
+    }
+}

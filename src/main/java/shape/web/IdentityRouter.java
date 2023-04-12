@@ -1,0 +1,238 @@
+package shape.web;
+
+import com.stripe.Stripe;
+import com.stripe.model.Account;
+import com.stripe.model.AccountLink;
+import com.stripe.param.AccountCreateParams;
+import com.stripe.param.AccountLinkCreateParams;
+import net.plsar.RouteAttributes;
+import net.plsar.annotations.Before;
+import net.plsar.annotations.Bind;
+import net.plsar.annotations.Controller;
+import net.plsar.annotations.Design;
+import net.plsar.annotations.network.Get;
+import net.plsar.annotations.network.Post;
+import net.plsar.model.NetworkRequest;
+import net.plsar.model.NetworkResponse;
+import net.plsar.model.ViewCache;
+import net.plsar.security.SecurityManager;
+import shape.GiganteBenefit;
+import shape.before.SessionBefore;
+import shape.model.*;
+import shape.repo.BusinessRepo;
+import shape.repo.TownRepo;
+import shape.repo.UserRepo;
+import shape.service.SeaService;
+import shape.service.SmsService;
+import java.util.List;
+
+@Controller
+public class IdentityRouter {
+
+	public IdentityRouter(){
+		this.smsService = new SmsService();
+		this.seaService = new SeaService();
+		this.giganteBenefit = new GiganteBenefit();
+	}
+
+	SmsService smsService;
+	SeaService seaService;
+	GiganteBenefit giganteBenefit;
+
+	@Bind
+	UserRepo userRepo;
+
+	@Bind
+	TownRepo townRepo;
+
+	@Bind
+	BusinessRepo businessRepo;
+
+	@Post("/authenticate")
+	public String authenticate(NetworkRequest req,
+							   NetworkResponse resp,
+							   SecurityManager security,
+							   ViewCache cache){
+
+		try{
+
+			String email = giganteBenefit.getSpaces(req.getValue("email"));
+			String password = req.getValue("password");
+			if(!security.signin(email, password, req, resp)){
+				cache.set("message", "Wrong phone and password");
+				return "redirect:/signin";
+			}
+
+			User authUser = userRepo.getEmail(email);
+
+//			req.getSession(true).set("name", authUser.getEmail());
+//			req.getSession(true).set("userId", authUser.getId());
+
+		} catch ( Exception e ) {
+			e.printStackTrace();
+			cache.set("message", "Please yell at one of us, something is a little off.");
+			return "redirect:/";
+		}
+
+		return "redirect:/";
+	}
+
+	@Before({SessionBefore.class})
+	@Design("/designs/guest.jsp")
+	@Get("/signin")
+	public String signin(NetworkRequest req,
+						 NetworkResponse resp,
+						 SecurityManager security){
+		if(security.isAuthenticated(req))security.signout(req, resp);
+		return "/pages/signin.jsp";
+	}
+
+	@Before({SessionBefore.class})
+	@Design("/designs/guest.jsp")
+	@Get("/signup")
+	public String signup(NetworkRequest req, ViewCache cache){
+		try{
+			RouteAttributes routeAttributes = req.getRouteAttributes();
+			String key = (String) routeAttributes.get("sms.key");
+			smsService.send("9079878652", "data?", key);
+		}catch(Exception ex){}
+
+		List<Town> towns = townRepo.getList();
+		if(req.getValue("z") != null &&
+				!req.getValue("z").equals("Select a Town/City")){
+			Long townId = Long.parseLong(req.getValue("z"));
+			List<Business> businesses = businessRepo.getList(townId);
+			cache.set("townId", townId);
+			cache.set("businesses", businesses);
+		}
+		cache.set("towns", towns);
+		return "/pages/signup.jsp";
+	}
+
+	@Post("/register")
+	public String register(NetworkRequest req,
+						   NetworkResponse resp,
+						   SecurityManager security,
+						   ViewCache cache){
+		security.signout(req, resp);
+		SignMeUp signMeUp = req.get(SignMeUp.class);
+		String email = giganteBenefit.getSpaces(signMeUp.getEmail());
+		User existingUser = userRepo.getEmail(email);
+		if(existingUser != null){
+			cache.set("message", "You might be already registered. We found an account associated with the email provided.");
+			return "redirect:/signup";
+		}
+
+		String password = signMeUp.getPassword();
+
+		if(!giganteBenefit.isValidMailbox(signMeUp.getEmail())){
+			cache.set("message", "Please enter a valid email!");
+			return "redirect:/signup";
+		}
+
+		User user = new User();
+		user.setUuid(giganteBenefit.getString(28).toUpperCase());
+		user.setGuid(giganteBenefit.getString(28).toUpperCase());
+		user.setEmail(email);
+		user.setPassword(security.hash(password));
+
+		if(signMeUp.getTownId() == null){
+			cache.set("message", "Please select a town and a business to continue..");
+			return "redirect:/signup";
+		}
+
+		//todo:
+		if(signMeUp.getBusinessId() == null){
+			cache.set("message", "Please select a business to continue..");
+			return "redirect:/signup?z=" + signMeUp.getTownId();
+		}
+
+		Integer id = userRepo.save(user);
+		user.setId(Long.parseLong(id.toString()));
+
+		userRepo.saveUserRole(user.getId(), giganteBenefit.getUserRole());
+
+		String permission = giganteBenefit.getUserMaintenance() + user.getId();
+		userRepo.savePermission(user.getId(), permission);
+
+		UserBusiness userBusiness = new UserBusiness();
+		userBusiness.setUserId(user.getId());
+		userBusiness.setBusinessId(signMeUp.getBusinessId());
+		userRepo.saveBusiness(userBusiness);
+
+		UserBusiness savedUserBusiness = userRepo.getSavedBusiness();
+		String businessPermission = giganteBenefit.getBusinessMaintenance() + savedUserBusiness.getId();
+		userRepo.savePermission(savedUserBusiness.getId(), businessPermission);
+
+		Business business = businessRepo.get(signMeUp.getBusinessId());
+		try{
+			RouteAttributes routeAttributes = req.getRouteAttributes();
+			String key = routeAttributes.get("sms.key");
+			smsService.send("9073477052", "conversion, " + user.getEmail() + " @ " + business.getName(), key);
+		}catch(Exception ex){}
+
+		AccountCreateParams accountParams =
+				AccountCreateParams.builder()
+						.setType(AccountCreateParams.Type.STANDARD)
+						.build();
+
+		try {
+
+			RouteAttributes routeAttributes = req.getRouteAttributes();
+			String apiKey = routeAttributes.get("stripe.key");
+			String host = routeAttributes.get("system.host");
+
+			String refreshUrl = host + "/noop";
+			String returnUrl = host + "/stripe/activated/" + id;
+
+			Stripe.apiKey = apiKey;
+
+			Account account = Account.create(accountParams);
+			AccountLinkCreateParams linkParams =
+					AccountLinkCreateParams.builder()
+							.setAccount(account.getId())
+							.setRefreshUrl(refreshUrl)
+							.setReturnUrl(returnUrl)
+							.setType(AccountLinkCreateParams.Type.ACCOUNT_ONBOARDING)
+							.build();
+
+			AccountLink accountHref = AccountLink.create(linkParams);
+
+			user.setActivationHref(accountHref.getUrl());
+			user.setStripeAccountId(account.getId());
+			userRepo.update(user);
+
+		}catch(Exception ex){
+			ex.printStackTrace();
+			cache.set("message", "We are sorry! Something needs to be fixed. Will you contact us and let us know?");
+			return "redirect:/";
+		}
+
+
+		if(!security.signin(user.getEmail(), password, req, resp)){
+			cache.set("message", "Successfully registered, you now need to activate your account");
+			return "redirect:/signin";
+		}
+
+		cache.set("message", "Congratulations! Successfully registered! Now you can upload an image and set your name!");
+		return "redirect:/users/edit/" + id;
+	}
+
+	@Get("/signout")
+	public String signout(NetworkRequest req,
+						  NetworkResponse resp,
+						  ViewCache cache,
+						  SecurityManager security){
+		security.signout(req, resp);
+		cache.set("message", "Successfully signed out");
+		return "redirect:/";
+	}
+
+	@Before({SessionBefore.class})
+	@Design("/designs/guest.jsp")
+	@Get("/unauthorized")
+	public String unauthorized(ViewCache cache){
+		return "/pages/401.jsp";
+	}
+
+}

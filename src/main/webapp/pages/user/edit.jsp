@@ -1,0 +1,62 @@
+
+<a:if spec="${message != ''}">
+	<p class="notify">${message}</p>
+</a:if>
+
+<a:if spec="${!user.activated}">
+	<div class="notify" style="margin-top:20px;font-size:17px;font-weight:300;line-height: 1.2em;">
+		You still need to complete the bank & tax information on Stripe
+		so you can receive your money!
+		<form action="/stripe/activate/${user.id}" method="post">
+			<input type="submit" value="Activate!" class="button green"
+				   style="margin:10px 0px;
+							font-family: Roboto !important;
+							font-size:17px;
+							padding:23px 26px;"/>
+			<br/>
+		</form>
+	</div>
+</a:if>
+
+<h1 class="left-float">Edit Profile</h1>
+
+<a href="/${user.guid}" class="href-dotted-black"
+						style="float:left;margin-left:20px;">What the Tipper Sees!</a>
+
+<br class="clear"/>
+
+<form action="/users/update/${user.id}" method="post" enctype="multipart/form-data">
+${user.photo}
+	<a:if spec="${user.photo != ''}">
+		<img src="${user.photo}" style="width:230px;padding:3px; border:solid 1px #deeaea"/>
+	</a:if>
+
+	<label>Profile Image</label>
+	<input type="file" name="media"/>
+
+	<label>Name</label>
+	<input type="text" name="name" placeholder="" value="${user.name}" style="width:90%"/>
+
+	<label>Cell Phone</label>
+	<span class="tiny">The application uses your cell phone to send notifications.</span>
+	<br class="clear"/>
+	<input type="text" name="phone" placeholder="907347052" value="${user.phone}"/>
+
+	<label>Thank Em!</label>
+	<span class="tiny">Simply say thanks, this will be displayed after the person makes a tip!</span>
+	<textarea name="description">${user.description}</textarea>
+
+	<div class="button-wrapper">
+		<input type="submit" value="Update Profile" class="button green"
+			   style="width:100%;
+						margin-bottom:10px;
+						font-family: Roboto !important;
+						font-size:17px;
+						padding:23px 26px;"/>
+	</div>
+</form>
+
+
+<a href="/signout" class="href-dotted">Signout</a>
+
+
